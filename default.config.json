@@ -1,0 +1,10 @@
+{
+  "LDAP_BASE": "dc=example,dc=com",
+  "LDAP_URL": "ldap://ldap.example.com",
+  "LDAP_BIND_USER": "cn=admin,dc=example,dc=com",
+  "LDAP_BIND_PASSWORD": "password (this will not be stored in plain text after the service has started)",
+  "LDAP_USER_BY_NAME": "(uid={0})",
+  "LDAP_SEARCH_ALL_QUERY": "(objectClass=inetOrgPerson)",
+  "LDAP_SEARCH_QUERY": "(&(objectClass=inetOrgPerson)(anr={0}))",
+  "PROVISIONING_TICKET": "auth0 provisioning ticket"
+}

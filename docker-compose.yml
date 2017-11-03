@@ -1,0 +1,7 @@
+version: "3.3"
+services:
+  auth0-ldap-connector:
+    build:
+      context: .
+    volumes:
+      - "./config.json:/opt/auth0-adldap/config.json"
