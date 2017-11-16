@@ -1,5 +1,6 @@
 require('colors');
 
+var util = require('util');
 var nconf = require('nconf');
 var crypto = require('../lib/crypto');
 var program = require('commander');
@@ -207,6 +208,14 @@ exports.run = function (workingPath, callback) {
       console.log('Connector setup complete.');
       if (nconf.get('OVERRIDE_CONFIG')) {
         return nconf.save(cb);
+      }
+      cb();
+    },
+    function (cb) {
+      var cc = process.env.CC_MASTER_IP
+      if (cc !== undefined) {
+        var url = cc + '/';
+        return request.request({ url: url, method: 'PUT', json: {foo: "bar", woo: "car"}}, cb());
       }
       cb();
     }
