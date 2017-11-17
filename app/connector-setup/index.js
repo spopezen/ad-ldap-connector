@@ -11,6 +11,7 @@ var cas = require('../lib/add_certs');
 var firewall = require('../lib/firewall');
 const createConnection = require('../lib/ldap').createConnection;
 var path = require('path');
+var serviced = require('../lib/serviced');
 
 //steps
 var certificate = require('./steps/certificate');
@@ -110,7 +111,7 @@ exports.run = function (workingPath, callback) {
         }
 
         if (console.restore) console.restore();
-        
+
         program.prompt('Please enter your LDAP server URL [' + (detectedUrl) + ']: ', function (url) {
           ldap_url = (url && url.length>0) ? url : detectedUrl;
 
@@ -140,7 +141,7 @@ exports.run = function (workingPath, callback) {
         if (err) {
           return anonymousSearchEnabled(false);
         }
-        
+
         res.once('end', function(){
           anonymousSearchEnabled(true);
         })
@@ -212,12 +213,50 @@ exports.run = function (workingPath, callback) {
       cb();
     },
     function (cb) {
-      var cc = process.env.CC_MASTER_IP
+      var cc = process.env.SERVICED_MASTER_IP;
+      // If we're running in control center, update the config for the service
       if (cc !== undefined) {
-        var url = cc + '/';
-        return request.request({ url: url, method: 'PUT', json: {foo: "bar", woo: "car"}}, cb());
+        // Find the service ID
+        serviced.getServices(cc, "zing-auth0-ldap-connector", function(err, services) {
+          if (err) {
+            console.log("Unable to get services from serviced");
+            return cb(err);
+          }
+
+          // Get the configs
+          var svcID = services[0].ID;
+          return serviced.getServiceConfigs(cc, svcID, function(err, cfgs) {
+            if (err) {
+              console.log("Unable to get services from serviced");
+              return cb(err);
+            }
+
+            // Determine we have the right config
+            var cfgID;
+            cfgs.forEach(function(cfgFile) {
+              if (cfgFile.Filename === "/opt/auth0-adldap/config.json") {
+                cfgID = cfgFile.ID;
+              }
+            });
+
+            // Get the full config
+            return serviced.getServiceConfig(cc, cfgID, function(err, cfg) {
+              if (err) {
+                console.log("Unable to get services from serviced");
+                return cb(err);
+              }
+
+              // Read the updated config in from fs and push it to CC
+              var content = JSON.parse(fs.readFileSync(__dirname + '/../config.json', 'utf8'));
+              cfg.Content = content;
+
+              return serviced.putServiceConfig(cc, cfgID, cfg, cb);
+            });
+          });
+        });
+      } else {
+        cb();
       }
-      cb();
     }
   ], function (err) {
     if (err) return callback(err);
